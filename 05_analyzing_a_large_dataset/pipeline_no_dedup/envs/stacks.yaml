@@ -1,0 +1,8 @@
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - stacks =2.2
+  - pandas
+  - numpy
+  - rename
