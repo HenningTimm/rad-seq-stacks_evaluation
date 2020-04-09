@@ -1,0 +1,149 @@
+workflows = ["no_dedup", "with_dedup"]
+
+rule all:
+    input:
+        expand(
+            "rad-seq-stacks_{workflow}/plots/distribution_comparison/stacks_counts.pdf",
+            workflow=workflows,
+        ),
+        expand(
+            "rad-seq-stacks_{workflow}/plots/distribution_comparison/stacks_size_distribution.pdf",
+            workflow=workflows,
+        ),
+        expand(
+            "validation/{workflow}/{parameters}.validation.yaml",
+            workflow=workflows,
+            parameters=[f"n={n}.M={M}.m={m}" for n, M, m in ((2,2,3), (5,5,3), (3,2,3), (4,3,3), (16, 15, 3))],
+        ),
+        "compared_stack_sizes.pdf",
+
+rule run_subworkflow:
+    input:
+        "rad-seq-stacks_{workflow}/individuals.tsv",
+        "rad-seq-stacks_{workflow}/units.tsv",
+    output:
+        "rad-seq-stacks_{workflow}/plots/distribution_comparison/stacks_counts.pdf",
+        "rad-seq-stacks_{workflow}/plots/distribution_comparison/stacks_size_distribution.pdf",
+        "rad-seq-stacks_{workflow}/plots/distribution_comparison/sizes_dataframe.csv",
+        "rad-seq-stacks_{workflow}/plots/distribution_comparison/counts_dataframe.csv",
+        expand(
+            "rad-seq-stacks_{{workflow}}/stacks/{parameters}/catalog.fa.gz",
+            workflow=workflows,
+            parameters=[f"n={n}.M={M}.m={m}" for n, M, m in ((2,2,3), (5,5,3), (3,2,3), (4,3,3), (16, 15, 3))],
+        ),
+        expand(
+            "rad-seq-stacks_{{workflow}}/calls/{parameters}/populations.snps.vcf",
+            workflow=workflows,
+            parameters=[f"n={n}.M={M}.m={m}" for n, M, m in ((2,2,3), (5,5,3), (3,2,3), (4,3,3), (16, 15, 3))],
+        ),
+    params:
+        cores=24
+    shell:
+        "cd rad-seq-stacks_{wildcards.workflow} && "
+        "snakemake --use-conda --jobs {params.cores} -F"
+
+rule plot_comparison:
+    input:
+        sizes_no_dedup="rad-seq-stacks_no_dedup/plots/distribution_comparison/sizes_dataframe.csv",
+        sizes_with_dedup="rad-seq-stacks_with_dedup/plots/distribution_comparison/sizes_dataframe.csv",
+        counts_no_dedup="rad-seq-stacks_no_dedup/plots/distribution_comparison/counts_dataframe.csv",
+        counts_with_dedup="rad-seq-stacks_with_dedup/plots/distribution_comparison/counts_dataframe.csv",
+    output:
+        violin_path="compared_stack_sizes.pdf",
+        scatter_path="compared_stack_counts.pdf",
+    params:
+        threshold=100
+    conda:
+        "rad-seq-stacks_with_dedup/envs/plot_stacks_dist.yaml"
+    script:
+        "scripts/compare_pipelines.py"
+
+rule rage_dataset:
+    output:
+        "testdata/testdata_1.fastq.gz",
+        "testdata/testdata_2.fastq.gz",
+        "testdata/testdata_gt.yaml",
+        "testdata/testdata_barcodes.txt",
+    conda:
+        "rad-seq-stacks_with_dedup/envs/testdata.yaml"
+    params:
+        loci=100,
+        individuals=24,  # max number possible with standard BC set
+        output_prefix="ddrage_testdata",
+        ds_name="testdata",
+        hrl_number=0.05,  # default 0.05
+        prob_ID=0.1,  # default: 0.1
+        prob_het=0.5,  # default: 0.5
+        event_probs="0.9 0.05 0.05",  #--event-probabilities 0.9 0.05 0.05 common, dropout, mut
+        mutation_probs="1 0 0 0 0 0 0",  # only SNPs
+        prob_seq_error=0.01  # Default: 0.01
+    shell:
+        "ddrage --name {params.ds_name} -l {params.loci} -n {params.individuals} -o {params.output_prefix} "
+        "--hrl-number {params.hrl_number} --prob-incomplete-digestion {params.prob_ID} "
+        "--prob-heterozygous {params.prob_het} --event-probabilities {params.event_probs} "
+        "-z --prob-seq-error {params.prob_seq_error} --mutation-type-probabilities {params.mutation_probs} && "
+        "mv {params.output_prefix}/logs/* {params.output_prefix}/ && "
+        "rename -f 's/[ACGT]{{6}}_//' {params.output_prefix}/* && "
+        "mv {params.output_prefix}/* testdata/ && "
+        "rm -r {params.output_prefix}"
+
+
+rule remove_annotation:
+    input:
+        fq1="testdata/testdata_1.fastq.gz",
+        fq2="testdata/testdata_2.fastq.gz",
+    output:
+        fq1="testdata/testdata_1_noheader.fastq.gz",
+        fq2="testdata/testdata_2_noheader.fastq.gz",
+        gt1="testdata/testdata_1_annotation.txt",
+        gt2="testdata/testdata_2_annotation.txt",
+    conda:
+        "rad-seq-stacks_with_dedup/envs/testdata.yaml"
+    shell:
+        "remove_annotation {input.fq1} {input.fq2}"
+
+
+rule units_and_individuals:
+    input:
+        fq1="testdata/testdata_1_noheader.fastq.gz",
+        fq2="testdata/testdata_2_noheader.fastq.gz",
+        bc_file="testdata/testdata_barcodes.txt",
+    output:
+        individuals="rad-seq-stacks_{pipeline_config}/individuals.tsv",
+        units="rad-seq-stacks_{pipeline_config}/units.tsv",
+    script:
+        "scripts/generate_sample_files.py"
+
+
+
+rule index_stacks_loci:
+    input:
+        "rad-seq-stacks_{pipeline_config}/stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa.gz",
+    output:
+        fa="rad-seq-stacks_{pipeline_config}/stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa",
+        fai="rad-seq-stacks_{pipeline_config}/stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa.fai"
+    conda:
+        "rad-seq-stacks_with_dedup/envs/samtools.yaml"
+    shell:
+        """
+        gunzip -k {input}
+        samtools faidx {output.fa}
+        """
+
+rule compare_loci:
+    input:
+        fa="rad-seq-stacks_{pipeline_config}/stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa",
+        fai="rad-seq-stacks_{pipeline_config}/stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa.fai",
+        vcf="rad-seq-stacks_{pipeline_config}/calls/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/populations.snps.vcf",
+        gt="testdata/testdata_gt.yaml",
+    output:
+        "validation/{pipeline_config}/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.validation.yaml"
+    conda:
+        "rad-seq-stacks_with_dedup/envs/testdata.yaml"
+    params:
+        read_length=100,
+    shell:
+        """
+        python scripts/evaluate_stacks_results.py --read-length {params.read_length} "
+        "--ground-truth {input.gt} --stacks-snps-file {input.vcf} --stacks-fasta-file {input.fa} -o {output}
+        """
