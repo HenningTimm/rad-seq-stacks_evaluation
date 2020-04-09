@@ -1,0 +1,104 @@
+workflows = ["no_dedup", "with_dedup"]
+
+rule all:
+    input:
+        expand(
+            "rad-seq-stacks_{workflow}/plots/distribution_comparison/stacks_counts.pdf",
+            workflow=workflows,
+        ),
+        expand(
+            "rad-seq-stacks_{workflow}/plots/distribution_comparison/stacks_size_distribution.pdf",
+            workflow=workflows,
+        ),
+        "compared_stack_sizes.pdf",
+
+rule run_subworkflow:
+    input:
+        "rad-seq-stacks_{workflow}/individuals.tsv",
+        "rad-seq-stacks_{workflow}/units.tsv",
+    output:
+        "rad-seq-stacks_{workflow}/plots/distribution_comparison/stacks_counts.pdf",
+        "rad-seq-stacks_{workflow}/plots/distribution_comparison/stacks_size_distribution.pdf",
+        "rad-seq-stacks_{workflow}/plots/distribution_comparison/sizes_dataframe.csv",
+        "rad-seq-stacks_{workflow}/plots/distribution_comparison/counts_dataframe.csv",
+    params:
+        cores=24
+    shell:
+        "cd rad-seq-stacks_{wildcards.workflow} && "
+        "snakemake --use-conda --jobs {params.cores} -F"
+
+rule plot_comparison:
+    input:
+        sizes_no_dedup="rad-seq-stacks_no_dedup/plots/distribution_comparison/sizes_dataframe.csv",
+        sizes_with_dedup="rad-seq-stacks_with_dedup/plots/distribution_comparison/sizes_dataframe.csv",
+        counts_no_dedup="rad-seq-stacks_no_dedup/plots/distribution_comparison/counts_dataframe.csv",
+        counts_with_dedup="rad-seq-stacks_with_dedup/plots/distribution_comparison/counts_dataframe.csv",
+    output:
+        violin_path="compared_stack_sizes.pdf",
+        scatter_path="compared_stack_counts.pdf",
+    params:
+        threshold=60
+    conda:
+        "rad-seq-stacks_with_dedup/envs/plot_stacks_dist.yaml"
+    script:
+        "scripts/compare_pipelines.py"
+
+rule rage_dataset:
+    output:
+        "testdata/testdata_1.fastq.gz",
+        "testdata/testdata_2.fastq.gz",
+        "testdata/testdata_gt.yaml",
+        "testdata/testdata_barcodes.txt",
+    conda:
+        "rad-seq-stacks_with_dedup/envs/testdata.yaml"
+    params:
+        loci=10000,
+        individuals=24,  # max number possible with standard BC set
+        output_prefix="ddrage_testdata",
+        ds_name="testdata",
+        hrl_number=0.05,  # default 0.05
+        prob_ID=0.1,  # default: 0.1
+        prob_het=0.5,  # default: 0.5
+        event_probs="0.9 0.05 0.05",  #--event-probabilities 0.9 0.05 0.05 common, dropout, mut
+        prob_seq_error=0.01,  # Default: 0.01
+        expected_coverage=10,  # simulate low coverage data set ...
+        bbd_alpha=3,          # with slight left tailing
+        bbd_beta=2,           # and harder right dropoff
+    shell:
+        "ddrage --name {params.ds_name} -l {params.loci} -n {params.individuals} -o {params.output_prefix} "
+        "--hrl-number {params.hrl_number} --prob-incomplete-digestion {params.prob_ID} "
+        "--prob-heterozygous {params.prob_het} --event-probabilities {params.event_probs} "
+        "--coverage {params.expected_coverage} --BBD-alpha {params.bbd_alpha} --BBD-beta {params.bbd_beta} "
+        "-z --prob-seq-error {params.prob_seq_error} && "
+        "mv {params.output_prefix}/logs/* {params.output_prefix}/ && "
+        "rename -f 's/[ACGT]{{6}}_//' {params.output_prefix}/* && "
+        "mv {params.output_prefix}/* testdata/ && "
+        "rm -r {params.output_prefix}"
+
+
+rule remove_annotation:
+    input:
+        fq1="testdata/testdata_1.fastq.gz",
+        fq2="testdata/testdata_2.fastq.gz",
+    output:
+        fq1="testdata/testdata_1_noheader.fastq.gz",
+        fq2="testdata/testdata_2_noheader.fastq.gz",
+        gt1="testdata/testdata_1_annotation.txt",
+        gt2="testdata/testdata_2_annotation.txt",
+    conda:
+        "rad-seq-stacks_with_dedup/envs/testdata.yaml"
+    shell:
+        "remove_annotation {input.fq1} {input.fq2}"
+
+
+rule units_and_individuals:
+    input:
+        fq1="testdata/testdata_1_noheader.fastq.gz",
+        fq2="testdata/testdata_2_noheader.fastq.gz",
+        bc_file="testdata/testdata_barcodes.txt",
+    output:
+        individuals="rad-seq-stacks_{pipeline_config}/individuals.tsv",
+        units="rad-seq-stacks_{pipeline_config}/units.tsv",
+    script:
+        "scripts/generate_sample_files.py"
+
