@@ -1,5 +1,6 @@
 workflows = ["no_dedup", "with_dedup"]
 
+configfile: "config.yaml"
 
 rule all:
     input:
@@ -20,7 +21,7 @@ rule run_subworkflow:
         "rad-seq-stacks_{workflow}/plots/distribution_comparison/counts_dataframe.csv",
     params:
         conf_file="rad-seq-stacks_{wildcards.workflow}/config.yaml",
-        cores=3
+        cores=config["cores_per_subworkflow"]
     shell:
         "cd rad-seq-stacks_{wildcards.workflow} && "
         "snakemake --use-conda --jobs {params.cores} -F"
@@ -36,7 +37,7 @@ rule plot_comparison:
         violin_path="01_compared_stack_sizes.pdf",
         scatter_path="01_compared_stack_counts.pdf",
     params:
-        threshold=100
+        threshold=config["plotting_threshold"]
     conda:
         "rad-seq-stacks_with_dedup/envs/plot_stacks_dist.yaml"
     script:
