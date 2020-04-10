@@ -50,8 +50,8 @@ rule plot_deduplication_influence:
         individuals_no="rad-seq-stacks_no_dedup/individuals.tsv",
         config_with="rad-seq-stacks_with_dedup/config.yaml",
         config_no="rad-seq-stacks_no_dedup/config.yaml",
-        # sentinel file to assure the subworkflow has been run., not actually used
-        sentinel=expand("rad-seq-stacks_{workflow}/plots/distribution_comparison/counts_dataframe.csv", workflow=workflows),
+        # Sentinel file to assure the subworkflow has been run. Not actually used.
+        _sentinel=expand("rad-seq-stacks_{workflow}/plots/distribution_comparison/counts_dataframe.csv", workflow=workflows),
     output:
         accumulation="01_cstacks_locus_number_accumulation.pdf",
         blacklisted="01_ustacks_nr_blacklisted_and_mean_coverage.pdf",
@@ -71,15 +71,15 @@ rule rage_dataset:
     conda:
         "rad-seq-stacks_with_dedup/envs/testdata.yaml"
     params:
-        loci=10000,
-        individuals=24,  # max number possible with standard BC set
-        output_prefix="ddrage_testdata",
-        ds_name="testdata",
-        hrl_number=0.05,  # default 0.05
-        prob_ID=0.1,  # default: 0.1
-        prob_het=0.5,  # default: 0.5
-        event_probs="0.9 0.05 0.05",  #--event-probabilities 0.9 0.05 0.05 common, dropout, mut
-        prob_seq_error=0.01  # Default: 0.01
+        loci=config["ddrage"]["loci"],
+        individuals=config["ddrage"]["individuals"],
+        output_prefix=config["ddrage"]["output_prefix"],
+        ds_name=config["ddrage"]["ds_name"],
+        hrl_number=config["ddrage"]["hrl_number"],
+        prob_ID=config["ddrage"]["prob_ID"],
+        prob_het=config["ddrage"]["prob_het"],
+        event_probs=config["ddrage"]["event_probs"],
+        prob_seq_error=config["ddrage"]["prob_seq_error"],
     shell:
         "ddrage --name {params.ds_name} -l {params.loci} -n {params.individuals} -o {params.output_prefix} "
         "--hrl-number {params.hrl_number} --prob-incomplete-digestion {params.prob_ID} "
