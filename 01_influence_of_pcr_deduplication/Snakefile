@@ -1,5 +1,3 @@
-workflows = ["no_dedup", "with_dedup"]
-
 configfile: "config.yaml"
 
 rule all:
@@ -50,7 +48,7 @@ rule plot_deduplication_influence:
         config_with="rad-seq-stacks_with_dedup/config.yaml",
         config_no="rad-seq-stacks_no_dedup/config.yaml",
         # Sentinel file to assure the subworkflow has been run. Not actually used.
-        _sentinel=expand("rad-seq-stacks_{workflow}/plots/distribution_comparison/counts_dataframe.csv", workflow=workflows),
+        _sentinel=expand("rad-seq-stacks_{workflow}/plots/distribution_comparison/counts_dataframe.csv", workflow=config["workflows"]),
     output:
         accumulation="01_cstacks_locus_number_accumulation.pdf",
         blacklisted="01_ustacks_nr_blacklisted_and_mean_coverage.pdf",

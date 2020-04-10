@@ -1,16 +1,9 @@
-workflows = ["no_dedup", "with_dedup"]
-
+configfile: "config.yaml"
+            
 rule all:
     input:
-        expand(
-            "rad-seq-stacks_{workflow}/plots/distribution_comparison/stacks_counts.pdf",
-            workflow=workflows,
-        ),
-        expand(
-            "rad-seq-stacks_{workflow}/plots/distribution_comparison/stacks_size_distribution.pdf",
-            workflow=workflows,
-        ),
-        "compared_stack_sizes.pdf",
+        "03_locus_distance_compared_stack_sizes.pdf",
+        "03_locus_distance_compared_stack_counts.pdf",
 
 rule run_subworkflow:
     input:
@@ -22,7 +15,7 @@ rule run_subworkflow:
         "rad-seq-stacks_{workflow}/plots/distribution_comparison/sizes_dataframe.csv",
         "rad-seq-stacks_{workflow}/plots/distribution_comparison/counts_dataframe.csv",
     params:
-        cores=24
+        cores=config["cores_per_subworkflow"]
     shell:
         "cd rad-seq-stacks_{wildcards.workflow} && "
         "snakemake --use-conda --jobs {params.cores} -F"
@@ -34,10 +27,10 @@ rule plot_comparison:
         counts_no_dedup="rad-seq-stacks_no_dedup/plots/distribution_comparison/counts_dataframe.csv",
         counts_with_dedup="rad-seq-stacks_with_dedup/plots/distribution_comparison/counts_dataframe.csv",
     output:
-        violin_path="compared_stack_sizes.pdf",
-        scatter_path="compared_stack_counts.pdf",
+        violin_path="03_locus_distance_compared_stack_sizes.pdf",
+        scatter_path="03_locus_distance_compared_stack_counts.pdf",
     params:
-        threshold=100
+        threshold=config["plotting_threshold"]
     conda:
         "rad-seq-stacks_with_dedup/envs/plot_stacks_dist.yaml"
     script:
@@ -52,18 +45,18 @@ rule rage_dataset:
     conda:
         "rad-seq-stacks_with_dedup/envs/testdata.yaml"
     params:
-        loci=10000,
-        individuals=24,  # max number possible with standard BC set
-        output_prefix="ddrage_testdata",
-        ds_name="testdata",
-        hrl_number=0.05,  # default 0.05
-        prob_ID=0.1,  # default: 0.1
-        prob_het=0.5,  # default: 0.5
-        event_probs="0.00 0.00 1.0",  #--event-probabilities 0.9 0.05 0.05 common, dropout, mut
-        prob_seq_error=0.02,  # Default: 0.01
-        expected_coverage=30,  # simulate low coverage data set ...
-        diversity=12,
-        read_length=150,
+        loci=config["ddrage"]["loci"],
+        individuals=config["ddrage"]["individuals"],
+        output_prefix=config["ddrage"]["output_prefix"],
+        ds_name=config["ddrage"]["ds_name"],
+        hrl_number=config["ddrage"]["hrl_number"],
+        prob_ID=config["ddrage"]["prob_ID"],
+        prob_het=config["ddrage"]["prob_het"],
+        event_probs=config["ddrage"]["event_probs"],
+        prob_seq_error=config["ddrage"]["prob_seq_error"],
+        expected_coverage=config["ddrage"]["expected_coverage"],
+        diversity=config["ddrage"]["diversity"],
+        read_length=config["ddrage"]["read_length"],
     shell:
         "ddrage --name {params.ds_name} -l {params.loci} -n {params.individuals} -o {params.output_prefix} "
         "--hrl-number {params.hrl_number} --prob-incomplete-digestion {params.prob_ID} "

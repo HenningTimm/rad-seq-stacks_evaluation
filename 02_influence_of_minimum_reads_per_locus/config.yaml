@@ -2,7 +2,6 @@ cores_per_subworkflow: 3
 
 plotting_threshold: 60
 
-
 ddrage:
   loci:
     10000

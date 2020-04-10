@@ -1,5 +1,3 @@
-workflows = ["no_dedup", "with_dedup"]
-
 configfile: "config.yaml"
 
 rule all:

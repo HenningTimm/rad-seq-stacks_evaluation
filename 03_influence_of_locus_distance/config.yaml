@@ -1,7 +1,3 @@
-workflows:
-  "no_dedup"
-  "with_dedup"
-
 cores_per_subworkflow: 3
 
 plotting_threshold: 100
@@ -26,8 +22,17 @@ ddrage:
     # default: 0.5
     0.5
   event_probs:
-    #--event-probabilities 0.9 0.05 0.05 common, dropout, mut
-    "0.9 0.05 0.05"
+    #--event-probabilities common, dropout, mut
+    "0.00 0.00 1.0"
   prob_seq_error:
     # Default: 0.01
-    0.01
+    0.02
+  expected_coverage:
+    30
+  diversity:
+    # increase diversity to receive more expected diffeing
+    # positions between loci
+    12
+  read_length:
+    # increase read length to allow for more mutations in the model
+    150

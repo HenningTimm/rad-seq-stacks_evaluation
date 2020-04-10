@@ -17,7 +17,6 @@ p7_reader = dinopy.FastqReader(p7_file)
 
 with open(p5_length, "r") as p5_len_file:
     p5_len = int(p5_len_file.readline().strip())
-    # TODO: get truncation length
 
 with open(p7_length, "r") as p7_len_file:
     p7_len = int(p7_len_file.readline().strip())

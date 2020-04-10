@@ -30,23 +30,6 @@ rule count:
         cargo run --release --manifest-path={params.cargo_path} -- count-locus-sizes {input.tsv} --dat {output.dat}
         """
 
-
-# # plot a histogram and a violin plot of stacks sizes for one individual
-# rule plot:
-#     input:
-#         dats="counts/{parameter_set}/{individual}.dat",
-#     output:
-#         pdf="plots/{parameter_set}/{individual}.pdf"
-#     conda:
-#         "../envs/plot_stacks_dist.yaml"
-#     params:
-#         plot_script=get_plot_script
-#     shell:
-#         """
-#         python {params.plot_script} stacks_sizes {input.dats} --output-path {output.pdf}
-#         """
-
-
 # concatenate all plots for one parameter set into one pdf document
 rule assemble_report:
     input:
@@ -65,25 +48,8 @@ def get_all_parameter_sets():
     
     for parameters in config["params"]["stacks"]:
         all_sets.append(f"n={parameters['max_locus_mm']}.M={parameters['max_individual_mm']}.m={parameters['min_reads']}")
-    print(all_sets, type(all_sets))
-    print(all_sets[0], type(all_sets[0]))
     return all_sets
 
-# rule plot_comparison:
-#     input:
-#         dats=expand("counts/{parameter_set}/{{individual}}.dat", parameter_set=get_all_parameter_sets()),
-#     output:
-#         violin_pdf="plots/distribution_comparison/{individual}_stacks_size_distribution.pdf",
-#         scatter_pdf="plots/distribution_comparison/{individual}_stacks_counts.pdf",
-#     conda:
-#         "../envs/plot_stacks_dist.yaml"
-#     params:
-#         plot_script=get_plot_script,
-#         threshold=100
-#     shell:
-#         """
-#         python {params.plot_script} compare_parameters {input.dats} --threshold {params.threshold}  --violin-path {output.violin_pdf} --scatter-path {output.scatter_pdf}
-#         """
 
 rule plot_comparison:
     input:
