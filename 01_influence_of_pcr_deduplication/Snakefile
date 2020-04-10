@@ -20,7 +20,6 @@ rule run_subworkflow:
         "rad-seq-stacks_{workflow}/plots/distribution_comparison/sizes_dataframe.csv",
         "rad-seq-stacks_{workflow}/plots/distribution_comparison/counts_dataframe.csv",
     params:
-        conf_file="rad-seq-stacks_{wildcards.workflow}/config.yaml",
         cores=config["cores_per_subworkflow"]
     shell:
         "cd rad-seq-stacks_{wildcards.workflow} && "

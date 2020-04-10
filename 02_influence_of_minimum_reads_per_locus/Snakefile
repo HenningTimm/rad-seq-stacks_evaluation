@@ -1,5 +1,7 @@
 workflows = ["no_dedup", "with_dedup"]
 
+configfile: "config.yaml"
+
 rule all:
     input:
         expand(
@@ -22,7 +24,7 @@ rule run_subworkflow:
         "rad-seq-stacks_{workflow}/plots/distribution_comparison/sizes_dataframe.csv",
         "rad-seq-stacks_{workflow}/plots/distribution_comparison/counts_dataframe.csv",
     params:
-        cores=24
+        cores=config["cores_per_subworkflow"]
     shell:
         "cd rad-seq-stacks_{wildcards.workflow} && "
         "snakemake --use-conda --jobs {params.cores} -F"
@@ -37,7 +39,8 @@ rule plot_comparison:
         violin_path="compared_stack_sizes.pdf",
         scatter_path="compared_stack_counts.pdf",
     params:
-        threshold=60
+        # threshold=60
+        threshold=config["plotting_threshold"]
     conda:
         "rad-seq-stacks_with_dedup/envs/plot_stacks_dist.yaml"
     script:
@@ -52,18 +55,18 @@ rule rage_dataset:
     conda:
         "rad-seq-stacks_with_dedup/envs/testdata.yaml"
     params:
-        loci=10000,
-        individuals=24,  # max number possible with standard BC set
-        output_prefix="ddrage_testdata",
-        ds_name="testdata",
-        hrl_number=0.05,  # default 0.05
-        prob_ID=0.1,  # default: 0.1
-        prob_het=0.5,  # default: 0.5
-        event_probs="0.9 0.05 0.05",  #--event-probabilities 0.9 0.05 0.05 common, dropout, mut
-        prob_seq_error=0.01,  # Default: 0.01
-        expected_coverage=10,  # simulate low coverage data set ...
-        bbd_alpha=3,          # with slight left tailing
-        bbd_beta=2,           # and harder right dropoff
+        loci=config["ddrage"]["loci"],
+        individuals=config["ddrage"]["individuals"],
+        output_prefix=config["ddrage"]["output_prefix"],
+        ds_name=config["ddrage"]["ds_name"],
+        hrl_number=config["ddrage"]["hrl_number"],
+        prob_ID=config["ddrage"]["prob_ID"],
+        prob_het=config["ddrage"]["prob_het"],
+        event_probs=config["ddrage"]["event_probs"],
+        prob_seq_error=config["ddrage"]["prob_seq_error"],
+        expected_coverage=config["ddrage"]["expected_coverage"],
+        bbd_alpha=config["ddrage"]["bbd_alpha"],
+        bbd_beta=config["ddrage"]["bbd_beta"],
     shell:
         "ddrage --name {params.ds_name} -l {params.loci} -n {params.individuals} -o {params.output_prefix} "
         "--hrl-number {params.hrl_number} --prob-incomplete-digestion {params.prob_ID} "
