@@ -1,3 +1,4 @@
+import itertools
 import re
 import pandas as pd
 import numpy as np
@@ -5,51 +6,61 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import yaml
 
+
 def get_log_files():
-    individuals_with = pd.read_csv(snakemake.input.individuals_with, sep="\t")
-    individuals_no = pd.read_csv(snakemake.input.individuals_no, sep="\t")
+    """Collect ustacks and cstacks log files for all individuals and
+    parameter sets in both subworkflows.
+    """
+    # assert the individuals in both subworksflows are identical
+    individuals_with = list(pd.read_csv(snakemake.input.individuals_with, sep="\t")["id"])
+    individuals_no = list(pd.read_csv(snakemake.input.individuals_no, sep="\t")["id"])
     assert(individuals_with == individuals_no)
-    individuals = individuals_with["id"]
-    print("individuals:", individuals)
-    
+    individuals = individuals_with
+
+    # assert both subworkflows used the same parameters
     stacks_params = None
     with open(snakemake.input.config_with, "r") as config_with_dedup, open(snakemake.input.config_no, "r") as config_no_dedup:
-         params_with_dedup = yaml.safe_load(config_with_dedup)["params"]["stacks"]
-         params_no_dedup = yaml.safe_load(config_no_dedup)["params"]["stacks"]
-         assert(params_with_dedup == params_no_dedup)
-         stacks_params = params_with_dedup
-    print("stacks_params:", stacks_params)
+        params_with_dedup = yaml.safe_load(config_with_dedup)["params"]["stacks"]
+        params_no_dedup = yaml.safe_load(config_no_dedup)["params"]["stacks"]
+        assert(params_with_dedup == params_no_dedup)
+        stacks_params = params_with_dedup
 
+    # assemble all cstacks filenames without subfolder
     def cstacks_file(parameter_set):
         return f"n={parameter_set['max_locus_mm']}.M={parameter_set['max_individual_mm']}.m={parameter_set['min_reads']}.log"
     cstacks_filenames = [cstacks_file(param_set) for param_set in stacks_params]
-    print("cstacks_files:", cstacks_filenames)
 
+    # assemble all ustacks filenames without subfolder
     def ustacks_file(parameter_set, individual):
         return f"M={parameter_set['max_individual_mm']}.m={parameter_set['min_reads']}/{individual}.log"
     ustacks_filenames = [ustacks_file(param_set, ind) for (param_set, ind) in itertools.product(stacks_params, individuals)]
-    print("ustacks_files:", ustacks_filenames)
 
+    # assemble full filenames by adding subfolders
     paths_dict = {
-        "logs_cstacks_with_dedup": [f"rad-seq-stacks_with_dedup/{cf}" for cf in cstacks_filenames],
-        "logs_cstacks_no_dedup": [f"rad-seq-stacks_no_dedup/{cf}" for cf in cstacks_filenames],
-        "logs_ustacks_with_dedup": [f"rad-seq-stacks_with_dedup/{uf}" for uf in ustacks_filenames],
-        "logs_ustacks_no_dedup": [f"rad-seq-stacks_no_dedup/{uf}" for uf in ustacks_filenames],
+        "logs_cstacks_with_dedup": [f"rad-seq-stacks_with_dedup/logs/cstacks/{cf}" for cf in cstacks_filenames],
+        "logs_cstacks_no_dedup": [f"rad-seq-stacks_no_dedup/logs/cstacks/{cf}" for cf in cstacks_filenames],
+        "logs_ustacks_with_dedup": [f"rad-seq-stacks_with_dedup/logs/ustacks/{uf}" for uf in ustacks_filenames],
+        "logs_ustacks_no_dedup": [f"rad-seq-stacks_no_dedup/logs/ustacks/{uf}" for uf in ustacks_filenames],
         }
-    print(paths_dict)
     return paths_dict
 
 
 
 def parse_cstacks_file(text):
+    """Parse a cstacks log file to extract the number of new loci added per sample.
+    Return results as a dataframe.
+    """
     segments = text.split("\n\n")
     newly_added_loci = []
     matched_to_known = []
     ind_nrs = []
     total = None
 
+    # A segment is a group of lines in the log file that describe a certain action
+    # this can be initialization, adding a sample to the catalog (processing),
+    # or writing output.
     for segment in segments:
-
+        
         if segment.startswith("Initializing"):
             nr = 1
             newly_added = int(re.search("(\d+) loci were newly added to the catalog", segment).groups()[0])
@@ -62,11 +73,11 @@ def parse_cstacks_file(text):
             of = int(of)
             ind_nr = re.search("/(Individual_\d+)\.", segment).groups()[0]
             ind_nrs.append(ind_nr)
-            matched_to_known = int(re.search("(\d+) loci were matched to a catalog locus", segment).groups()[0])
+            # matched_to_known = int(re.search("(\d+) loci were matched to a catalog locus", segment).groups()[0])
             newly_added = int(re.search("(\d+) loci were newly added to the catalog", segment).groups()[0])
             newly_added_loci.append(newly_added)
         elif segment.startswith("Writing"):
-            total = int(re.search("Final catalog contains (\d+) loci.", segment).groups()[0])
+            # total = int(re.search("Final catalog contains (\d+) loci.", segment).groups()[0])
             params = re.search("directory 'stacks/(.+)/'", segment).groups()[0]
 
     df = pd.DataFrame(
@@ -77,13 +88,15 @@ def parse_cstacks_file(text):
         }
     )
     df["params"] = params
-        
-    print(newly_added_loci, total, params)
+
     return df
 
 
 def parse_ustacks_file(text):
-
+    """Parse a ustacks file to extract the number of blacklisted loci (HRLs)
+    and the mean size of initial clusters.
+    Return resulkts as a pandas data frame.
+    """
     individual = re.search("(Individual_(\d+)).fq.gz", text).groups()[0]
     blacklisted = int(re.search("Blacklisted (\d+) stacks.", text).groups()[0])
     initial_mean_cov = float(re.search("Stack coverage: mean=(\d+.\d+);", text).groups()[0]) 
@@ -99,36 +112,37 @@ def parse_ustacks_file(text):
 
 
 def get_dataframe():
+    """Parse all log files into dataframes and join them into one large dataframe.
+    """
+    log_files = get_log_files()
     cstacks_dataframes = []
     ustacks_dataframes = []
-    # for f in glob.glob("with_dedup/cstacks/*.log"):
-    for f in snakemake.input.logs_cstacks_with_dedup:
+    for f in log_files["logs_cstacks_with_dedup"]:
         with open(f, "r") as log_file:
             df = parse_cstacks_file(log_file.read())
             df["dedup"] = "yes"
             cstacks_dataframes.append(df)
-    # for f in glob.glob("no_dedup/cstacks/*.log"):
-    for f in snakemake.input.logs_cstacks_no_dedup:
+
+    for f in log_files["logs_cstacks_no_dedup"]:
         with open(f, "r") as log_file:
             df = parse_cstacks_file(log_file.read())
             df["dedup"] = "no"
             cstacks_dataframes.append(df)
-            
-    # for f in glob.glob("with_dedup/ustacks/*/*.log"):
-    for f in snakemake.input.logs_ustacks_with_dedup:
+
+    for f in log_files["logs_ustacks_with_dedup"]:
         with open(f, "r") as log_file:
             df = parse_ustacks_file(log_file.read())
             df["dedup"] = "yes"
             df["params"] = re.search("/(M=\d+\.m=\d+)/", f).groups()[0]
             ustacks_dataframes.append(df)
-    # for f in glob.glob("no_dedup/ustacks/*/*.log"):
-    for f in snakemake.input.logs_ustacks_no_dedup:
+
+    for f in log_files["logs_ustacks_no_dedup"]:
         with open(f, "r") as log_file:
             df = parse_ustacks_file(log_file.read())
             df["dedup"] = "no"
             df["params"] = re.search("/(M=\d+\.m=\d+)/", f).groups()[0]
             ustacks_dataframes.append(df)
-    
+
     return pd.concat(cstacks_dataframes), pd.concat(ustacks_dataframes)
 
 
@@ -140,7 +154,8 @@ def plot_accumulating_loci(df):
     ax.set(yscale="log")
     sns.lineplot(x="Individual", y="loci_in_catalog", style="dedup",
                  hue="params", markers=True, alpha=0.7, data=df, ax=ax)
-    # NOTE: use number of individduals instead of 23?
+    # NOTE: use number of individuals instead of 23?
+    # use expected number of loci instead of 10000
     ax.plot([0, 23], [10000, 10000], linestyle=":", color="gray")
     ax.set_xticklabels(
         [str(i) for i, _ in enumerate(ax.get_xticklabels(), 1)]
@@ -181,6 +196,8 @@ def plot_endpoints(df):
 
 
 def plot_blacklisted_and_coverage(df):
+    """Plot the number of HRl loci (blacklisted) and mean size as swarm plots.
+    """
     # sort dedup calues so that they match the violin plot from before
     df = df.sort_values(by='dedup', ascending=True)
 
@@ -205,13 +222,10 @@ def plot_blacklisted_and_coverage(df):
     plt.clf()
 
 
-get_log_files()
-    
+# read in log files
 cstacks_df, ustacks_df = get_dataframe()
-print("cstacks:\n", cstacks_df)
+
 
 plot_accumulating_loci(cstacks_df)
 plot_endpoints(cstacks_df)
-
-print("ustacks:\n", ustacks_df)
 plot_blacklisted_and_coverage(ustacks_df)

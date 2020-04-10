@@ -18,11 +18,9 @@ rule run_subworkflow:
         "rad-seq-stacks_{workflow}/plots/distribution_comparison/stacks_size_distribution.pdf",
         "rad-seq-stacks_{workflow}/plots/distribution_comparison/sizes_dataframe.csv",
         "rad-seq-stacks_{workflow}/plots/distribution_comparison/counts_dataframe.csv",
-        # directory("rad-seq-stacks_{workflow}/logs/ustacks/"),
-        # directory("rad-seq-stacks_{workflow}/logs/cstacks/"),
     params:
-        conf_file="rad-seq-stacks_{wildcards.workflow}/config.yaml"
-    #     cores=24
+        conf_file="rad-seq-stacks_{wildcards.workflow}/config.yaml",
+        cores=3
     shell:
         "cd rad-seq-stacks_{wildcards.workflow} && "
         "snakemake --use-conda --jobs {params.cores} -F"
@@ -49,10 +47,10 @@ rule plot_deduplication_influence:
     input:
         individuals_with="rad-seq-stacks_with_dedup/individuals.tsv",
         individuals_no="rad-seq-stacks_no_dedup/individuals.tsv",
-        config_with="rad-seq-stacks_with_dedup/individuals.tsv",
-        config_no="rad-seq-stacks_no_dedup/individuals.tsv",
+        config_with="rad-seq-stacks_with_dedup/config.yaml",
+        config_no="rad-seq-stacks_no_dedup/config.yaml",
         # sentinel file to assure the subworkflow has been run., not actually used
-        expand("rad-seq-stacks_{workflow}/plots/distribution_comparison/counts_dataframe.csv", workflow=workflows),
+        sentinel=expand("rad-seq-stacks_{workflow}/plots/distribution_comparison/counts_dataframe.csv", workflow=workflows),
     output:
         accumulation="01_cstacks_locus_number_accumulation.pdf",
         blacklisted="01_ustacks_nr_blacklisted_and_mean_coverage.pdf",
