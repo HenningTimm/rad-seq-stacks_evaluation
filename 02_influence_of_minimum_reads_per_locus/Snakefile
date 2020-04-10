@@ -4,15 +4,8 @@ configfile: "config.yaml"
 
 rule all:
     input:
-        expand(
-            "rad-seq-stacks_{workflow}/plots/distribution_comparison/stacks_counts.pdf",
-            workflow=workflows,
-        ),
-        expand(
-            "rad-seq-stacks_{workflow}/plots/distribution_comparison/stacks_size_distribution.pdf",
-            workflow=workflows,
-        ),
-        "compared_stack_sizes.pdf",
+        "02_min_reads_compared_stack_sizes.pdf",
+        "02_min_reads_compared_stack_counts.pdf",
 
 rule run_subworkflow:
     input:
@@ -36,8 +29,8 @@ rule plot_comparison:
         counts_no_dedup="rad-seq-stacks_no_dedup/plots/distribution_comparison/counts_dataframe.csv",
         counts_with_dedup="rad-seq-stacks_with_dedup/plots/distribution_comparison/counts_dataframe.csv",
     output:
-        violin_path="compared_stack_sizes.pdf",
-        scatter_path="compared_stack_counts.pdf",
+        violin_path="02_min_reads_compared_stack_sizes.pdf",
+        scatter_path="02_min_reads_compared_stack_counts.pdf",
     params:
         threshold=config["plotting_threshold"]
     conda:
