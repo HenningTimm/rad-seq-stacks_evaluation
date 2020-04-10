@@ -39,7 +39,6 @@ rule plot_comparison:
         violin_path="compared_stack_sizes.pdf",
         scatter_path="compared_stack_counts.pdf",
     params:
-        # threshold=60
         threshold=config["plotting_threshold"]
     conda:
         "rad-seq-stacks_with_dedup/envs/plot_stacks_dist.yaml"
