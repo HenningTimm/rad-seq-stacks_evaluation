@@ -1,0 +1,4 @@
+rad-seq-stacks_no_dedup/*
+rad-seq-stacks_with_dedup/*
+testdata/*
+04_*.pdf

@@ -1,21 +1,13 @@
-workflows = ["no_dedup", "with_dedup"]
+configfile: "config.yaml"
 
 rule all:
     input:
-        expand(
-            "rad-seq-stacks_{workflow}/plots/distribution_comparison/stacks_counts.pdf",
-            workflow=workflows,
-        ),
-        expand(
-            "rad-seq-stacks_{workflow}/plots/distribution_comparison/stacks_size_distribution.pdf",
-            workflow=workflows,
-        ),
-        expand(
-            "validation/{workflow}/{parameters}.validation.yaml",
-            workflow=workflows,
-            parameters=[f"n={n}.M={M}.m={m}" for n, M, m in ((2,2,3), (5,5,3), (3,2,3), (4,3,3), (16, 15, 3))],
-        ),
-        "compared_stack_sizes.pdf",
+        "04_snps_compared_stack_sizes.pdf",
+        "04_snps_compared_stack_counts.pdf",
+        "04_snps_FP_snps.pdf",
+        "04_snps_TP_snps.pdf",
+        "04_snps_sensitivity.pdf",
+        "04_snps_split_loci.pdf",
 
 rule run_subworkflow:
     input:
@@ -28,16 +20,16 @@ rule run_subworkflow:
         "rad-seq-stacks_{workflow}/plots/distribution_comparison/counts_dataframe.csv",
         expand(
             "rad-seq-stacks_{{workflow}}/stacks/{parameters}/catalog.fa.gz",
-            workflow=workflows,
-            parameters=[f"n={n}.M={M}.m={m}" for n, M, m in ((2,2,3), (5,5,3), (3,2,3), (4,3,3), (16, 15, 3))],
+            workflow=config["workflows"],
+            parameters=[f"n={n}.M={M}.m={m}" for n, M, m in config["parameter_sets"]],
         ),
         expand(
             "rad-seq-stacks_{{workflow}}/calls/{parameters}/populations.snps.vcf",
-            workflow=workflows,
-            parameters=[f"n={n}.M={M}.m={m}" for n, M, m in ((2,2,3), (5,5,3), (3,2,3), (4,3,3), (16, 15, 3))],
+            workflow=config["workflows"],
+            parameters=[f"n={n}.M={M}.m={m}" for n, M, m in config["parameter_sets"]],
         ),
     params:
-        cores=24
+        cores=config["cores_per_subworkflow"]
     shell:
         "cd rad-seq-stacks_{wildcards.workflow} && "
         "snakemake --use-conda --jobs {params.cores} -F"
@@ -49,10 +41,10 @@ rule plot_comparison:
         counts_no_dedup="rad-seq-stacks_no_dedup/plots/distribution_comparison/counts_dataframe.csv",
         counts_with_dedup="rad-seq-stacks_with_dedup/plots/distribution_comparison/counts_dataframe.csv",
     output:
-        violin_path="compared_stack_sizes.pdf",
-        scatter_path="compared_stack_counts.pdf",
+        violin_path="04_snps_compared_stack_sizes.pdf",
+        scatter_path="04_snps_compared_stack_counts.pdf",
     params:
-        threshold=100
+        threshold=config["plotting_threshold"]
     conda:
         "rad-seq-stacks_with_dedup/envs/plot_stacks_dist.yaml"
     script:
@@ -67,16 +59,16 @@ rule rage_dataset:
     conda:
         "rad-seq-stacks_with_dedup/envs/testdata.yaml"
     params:
-        loci=100,
-        individuals=24,  # max number possible with standard BC set
-        output_prefix="ddrage_testdata",
-        ds_name="testdata",
-        hrl_number=0.05,  # default 0.05
-        prob_ID=0.1,  # default: 0.1
-        prob_het=0.5,  # default: 0.5
-        event_probs="0.9 0.05 0.05",  #--event-probabilities 0.9 0.05 0.05 common, dropout, mut
-        mutation_probs="1 0 0 0 0 0 0",  # only SNPs
-        prob_seq_error=0.01  # Default: 0.01
+        loci=config["ddrage"]["loci"],
+        individuals=config["ddrage"]["individuals"],
+        output_prefix=config["ddrage"]["output_prefix"],
+        ds_name=config["ddrage"]["ds_name"],
+        hrl_number=config["ddrage"]["hrl_number"],
+        prob_ID=config["ddrage"]["prob_ID"],
+        prob_het=config["ddrage"]["prob_het"],
+        event_probs=config["ddrage"]["event_probs"],
+        prob_seq_error=config["ddrage"]["prob_seq_error"],
+        mutation_probs=config["ddrage"]["mutation_probs"],
     shell:
         "ddrage --name {params.ds_name} -l {params.loci} -n {params.individuals} -o {params.output_prefix} "
         "--hrl-number {params.hrl_number} --prob-incomplete-digestion {params.prob_ID} "
@@ -130,6 +122,7 @@ rule index_stacks_loci:
         samtools faidx {output.fa}
         """
 
+
 rule compare_loci:
     input:
         fa="rad-seq-stacks_{pipeline_config}/stacks/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}/catalog.fa",
@@ -140,10 +133,35 @@ rule compare_loci:
         "validation/{pipeline_config}/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.validation.yaml"
     conda:
         "rad-seq-stacks_with_dedup/envs/testdata.yaml"
-    params:
-        read_length=100,
     shell:
-        """
-        python scripts/evaluate_stacks_results.py --read-length {params.read_length} "
-        "--ground-truth {input.gt} --stacks-snps-file {input.vcf} --stacks-fasta-file {input.fa} -o {output}
-        """
+        "python scripts/evaluate_stacks_results.py --ground-truth {input.gt} "
+        "--stacks-snps-file {input.vcf} --stacks-fasta-file {input.fa} -o {output}"
+
+
+rule aggregate_snp_detection_results:
+    input:
+        validation_files=expand(
+            "validation/{workflow}/{parameters}.validation.yaml",
+            workflow=config["workflows"],
+            parameters=[f"n={n}.M={M}.m={m}" for n, M, m in config["parameter_sets"]],
+        ),
+    output:
+        stats_file="results/aggregated_snp_statistics.txt"
+    conda:
+        "rad-seq-stacks_with_dedup/envs/testdata.yaml"
+    script:
+        "scripts/parse_validation_files.py"
+
+rule plot_snp_results:
+    input:
+        stats_file="results/aggregated_snp_statistics.txt"
+    output:
+        fp_snps="04_snps_FP_snps.pdf",
+        tp_snps="04_snps_TP_snps.pdf",
+        sensitivity="04_snps_sensitivity.pdf",
+        spit_loci="04_snps_split_loci.pdf",
+    conda:
+        "rad-seq-stacks_with_dedup/envs/testdata.yaml"
+    script:
+        "scripts/snp_evaluation.py"
+

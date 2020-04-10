@@ -272,13 +272,6 @@ def get_argparser():
     parser = argparse.ArgumentParser()
     # input
     parser.add_argument(
-        "-r", "--read-length",
-        help="Total simulated read length of one mate. ",
-        required=True,
-        type=int,
-        dest="read_length",
-        )
-    parser.add_argument(
         "-s", "--stacks-snps-file",
         help="Path to a stacks snps vcf file",
         dest="stacks_haplo",
