@@ -225,7 +225,7 @@ def plot_blacklisted_and_coverage(df):
 # read in log files
 cstacks_df, ustacks_df = get_dataframe()
 
-
+# plots
 plot_accumulating_loci(cstacks_df)
 plot_endpoints(cstacks_df)
 plot_blacklisted_and_coverage(ustacks_df)
