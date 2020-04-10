@@ -1,31 +1,32 @@
 workflows = ["no_dedup", "with_dedup"]
 
+
 rule all:
     input:
-        expand(
-            "rad-seq-stacks_{workflow}/plots/distribution_comparison/stacks_counts.pdf",
-            workflow=workflows,
-        ),
-        expand(
-            "rad-seq-stacks_{workflow}/plots/distribution_comparison/stacks_size_distribution.pdf",
-            workflow=workflows,
-        ),
-        "compared_stack_sizes.pdf",
+        "01_compared_stack_sizes.pdf",
+        "01_compared_stack_counts.pdf",
+        "01_cstacks_locus_number_accumulation.pdf",
+        "01_ustacks_nr_blacklisted_and_mean_coverage.pdf"
+
 
 rule run_subworkflow:
     input:
-        "rad-seq-stacks_{workflow}/individuals.tsv",
-        "rad-seq-stacks_{workflow}/units.tsv",
+        individuals="rad-seq-stacks_{workflow}/individuals.tsv",
+        units="rad-seq-stacks_{workflow}/units.tsv",
     output:
         "rad-seq-stacks_{workflow}/plots/distribution_comparison/stacks_counts.pdf",
         "rad-seq-stacks_{workflow}/plots/distribution_comparison/stacks_size_distribution.pdf",
         "rad-seq-stacks_{workflow}/plots/distribution_comparison/sizes_dataframe.csv",
         "rad-seq-stacks_{workflow}/plots/distribution_comparison/counts_dataframe.csv",
+        # directory("rad-seq-stacks_{workflow}/logs/ustacks/"),
+        # directory("rad-seq-stacks_{workflow}/logs/cstacks/"),
     params:
-        cores=24
+        conf_file="rad-seq-stacks_{wildcards.workflow}/config.yaml"
+    #     cores=24
     shell:
         "cd rad-seq-stacks_{wildcards.workflow} && "
         "snakemake --use-conda --jobs {params.cores} -F"
+
 
 rule plot_comparison:
     input:
@@ -34,14 +35,33 @@ rule plot_comparison:
         counts_no_dedup="rad-seq-stacks_no_dedup/plots/distribution_comparison/counts_dataframe.csv",
         counts_with_dedup="rad-seq-stacks_with_dedup/plots/distribution_comparison/counts_dataframe.csv",
     output:
-        violin_path="compared_stack_sizes.pdf",
-        scatter_path="compared_stack_counts.pdf",
+        violin_path="01_compared_stack_sizes.pdf",
+        scatter_path="01_compared_stack_counts.pdf",
     params:
         threshold=100
     conda:
         "rad-seq-stacks_with_dedup/envs/plot_stacks_dist.yaml"
     script:
         "scripts/compare_pipelines.py"
+
+
+rule plot_deduplication_influence:
+    input:
+        individuals_with="rad-seq-stacks_with_dedup/individuals.tsv",
+        individuals_no="rad-seq-stacks_no_dedup/individuals.tsv",
+        config_with="rad-seq-stacks_with_dedup/individuals.tsv",
+        config_no="rad-seq-stacks_no_dedup/individuals.tsv",
+        # sentinel file to assure the subworkflow has been run., not actually used
+        expand("rad-seq-stacks_{workflow}/plots/distribution_comparison/counts_dataframe.csv", workflow=workflows),
+    output:
+        accumulation="01_cstacks_locus_number_accumulation.pdf",
+        blacklisted="01_ustacks_nr_blacklisted_and_mean_coverage.pdf",
+        endpoints="01_endpoints.pdf",
+    conda:
+        "rad-seq-stacks_with_dedup/envs/plot_stacks_dist.yaml"
+    script:
+        "scripts/parse_logs.py"
+
 
 rule rage_dataset:
     output:
