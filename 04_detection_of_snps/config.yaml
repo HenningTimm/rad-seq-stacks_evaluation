@@ -16,7 +16,7 @@ parameter_sets:
 
 ddrage:
   loci:
-    10000
+    100
   individuals:
     # max number possible with standard BC set
     24
@@ -42,3 +42,5 @@ ddrage:
   mutation_probs:
     # only SNPs
     "1 0 0 0 0 0 0"
+  read_length:
+    100

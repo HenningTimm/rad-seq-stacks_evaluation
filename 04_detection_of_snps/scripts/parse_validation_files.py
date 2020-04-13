@@ -1,3 +1,7 @@
+"""Parse the output of aggregate_snp_detection_results rule.
+
+This output contains blocks of results.
+"""
 import yaml
 import copy
 import sys
@@ -22,13 +26,14 @@ def offset_snp(snp, offset, invert=False):
     return f"{orientation}@{pos}:{base_from}>{base_to}"
 
 
-def evaluate_file(path):
+def evaluate_file(path, stats_file):
     nr_of_misidentified_snps = 0
     nr_of_missed_snps = 0
     nr_of_correct_snps = 0
     nr_loci_missed_by_stacks = 0
     nr_loci_split_by_stacks = 0
     correctly_classified = 0
+    total_simulated_mutations = set()
     with open(path, "r") as yf:
         yaml_data = yaml.safe_load(yf)
 
@@ -43,13 +48,13 @@ def evaluate_file(path):
             try:
                 all_stacks_mutations |= snps_to_set(sl["SNPs"])
             except:
-                print(sl)
                 all_stacks_mutations = set()
 
         all_simulated_mutations = set()
         for _, gta in l["ground_truth_alleles"].items():
             if gta:
                 all_simulated_mutations |= snps_to_set(gta["mutations"])
+                total_simulated_mutations |= set([f"name_{mut}" for mut in snps_to_set(gta["mutations"])])
 
         # after removing all detected SNPs from the simulated set
         # check again using simulated position +1 and remove
@@ -83,25 +88,15 @@ def evaluate_file(path):
                 remaining_stacks_mutations.remove(offset_2_switched)
                 corrected_remaining_simulated_mutations.remove(sim_mut)
 
-
-        # old version
-        # missed_snps = all_simulated_mutations - all_stacks_mutations
-        # bad_snps = all_stacks_mutations - all_simulated_mutations
-
-        # new_version
+        # relabel for easier use
         missed_snps = corrected_remaining_simulated_mutations
         bad_snps = remaining_stacks_mutations
         
         if missed_snps:
-            # print(f"simulated: {all_simulated_mutations}")
-            # print(f"detected: {all_stacks_mutations}")
-            # print(f"missing: {missed_snps}")
             nr_of_missed_snps += len(missed_snps)
-
 
         if bad_snps:
             nr_of_misidentified_snps += len(bad_snps)
-            # print(f"detected: {all_stacks_mutations}")
             
         if not bad_snps and not missed_snps:
             nr_of_correct_snps += len(all_simulated_mutations)
@@ -113,36 +108,23 @@ def evaluate_file(path):
             print("\n\n", file=sys.stderr)
         if all_simulated_mutations == all_stacks_mutations:
             correctly_classified += 1
-        # print(all_stacks_mutations)
-        # print(all_simulated_mutations)
-        # print("\n")
+        print(f"All simulated mutations: {all_simulated_mutations} (len(all_simulated_mutations)) = {(len(all_simulated_mutations))}")
+    print(f"Total simulated mutations: {total_simulated_mutations} (len(total_simulated_mutations)) = {(len(total_simulated_mutations))}")
     output = [
         f"Analyzed {path}",
         f"Misidentified SNPs (FP):   {nr_of_misidentified_snps:>5}",
         f"Missed SNPs (FN):          {nr_of_missed_snps:>5}",
         f"Corectly called SNPs (TP): {nr_of_correct_snps:>5}",
-        f"Total SNPs:                {len(all_simulated_mutations):>5}",
+        f"Total SNPs:                {len(total_simulated_mutations):>5}",
         f"Split loci:                {nr_loci_split_by_stacks:>5}",
         f"Missed loci:               {nr_loci_missed_by_stacks:>5}",
         f"Correctly classified loci: {correctly_classified:>5}",
         "\n",
     ]
-    with open(snakemake.output.stats_file, "w"):
-        print("\n".join(output), file=stats_file)
+    print("\n".join(output), file=stats_file)
 
 
 if __name__ == "__main__":
-    # files = [
-    #     "no_dedup/n=16.M=15.m=3.validation.yaml",
-    #     "no_dedup/n=2.M=2.m=3.validation.yaml",
-    #     "no_dedup/n=3.M=2.m=3.validation.yaml",
-    #     "no_dedup/n=4.M=3.m=3.validation.yaml",
-    #     "no_dedup/n=5.M=5.m=3.validation.yaml",
-    #     "with_dedup/n=16.M=15.m=3.validation.yaml",
-    #     "with_dedup/n=2.M=2.m=3.validation.yaml",
-    #     "with_dedup/n=3.M=2.m=3.validation.yaml",
-    #     "with_dedup/n=4.M=3.m=3.validation.yaml",
-    #     "with_dedup/n=5.M=5.m=3.validation.yaml",
-    #     ]
-    for f in snakemake.input.validation_files:
-        evaluate_file(f)
+    with open(snakemake.output.stats_file, "w") as stats_file:
+        for f in sorted(snakemake.input.validation_files):
+            evaluate_file(f, stats_file)

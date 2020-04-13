@@ -69,9 +69,10 @@ rule rage_dataset:
         event_probs=config["ddrage"]["event_probs"],
         prob_seq_error=config["ddrage"]["prob_seq_error"],
         mutation_probs=config["ddrage"]["mutation_probs"],
+        read_length=config["ddrage"]["read_length"],
     shell:
         "ddrage --name {params.ds_name} -l {params.loci} -n {params.individuals} -o {params.output_prefix} "
-        "--hrl-number {params.hrl_number} --prob-incomplete-digestion {params.prob_ID} "
+        "--hrl-number {params.hrl_number} --prob-incomplete-digestion {params.prob_ID} --read-length {params.read_length} "
         "--prob-heterozygous {params.prob_het} --event-probabilities {params.event_probs} "
         "-z --prob-seq-error {params.prob_seq_error} --mutation-type-probabilities {params.mutation_probs} && "
         "mv {params.output_prefix}/logs/* {params.output_prefix}/ && "
@@ -133,9 +134,11 @@ rule compare_loci:
         "validation/{pipeline_config}/n={max_locus_mm}.M={max_individual_mm}.m={min_reads}.validation.yaml"
     conda:
         "rad-seq-stacks_with_dedup/envs/testdata.yaml"
+    params:
+        read_length=config["ddrage"]["read_length"],
     shell:
-        "python scripts/evaluate_stacks_results.py --ground-truth {input.gt} "
-        "--stacks-snps-file {input.vcf} --stacks-fasta-file {input.fa} -o {output}"
+        "python scripts/evaluate_stacks_results.py --read-length {params.read_length} "
+        "--ground-truth {input.gt} --stacks-snps-file {input.vcf} --stacks-fasta-file {input.fa} -o {output}"
 
 
 rule aggregate_snp_detection_results:
@@ -159,7 +162,7 @@ rule plot_snp_results:
         fp_snps="04_snps_FP_snps.pdf",
         tp_snps="04_snps_TP_snps.pdf",
         sensitivity="04_snps_sensitivity.pdf",
-        spit_loci="04_snps_split_loci.pdf",
+        split_loci="04_snps_split_loci.pdf",
     conda:
         "rad-seq-stacks_with_dedup/envs/testdata.yaml"
     script:

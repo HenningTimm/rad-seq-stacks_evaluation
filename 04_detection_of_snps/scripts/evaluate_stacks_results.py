@@ -46,8 +46,8 @@ def find_matching_loci(gt_data, stacks_data, similarity, verbose=True):
     sketched_stacks_data = [(sketch(stacks_record.seq.decode()), stacks_record)
                             for stacks_record in stacks_data]
     
-    print(assembly)
-    input("waiting for you")
+    # print(assembly)
+    # input("waiting for you")
     # for s, record in sketched_stacks_data:
     #     print(record, s)
 
@@ -65,13 +65,13 @@ def find_matching_loci(gt_data, stacks_data, similarity, verbose=True):
         for sketch_stacks, stacks_record in sketched_stacks_data:
             if sk.compare_sketches(sketch_gt, sketch_stacks, s) > similarity:
                 assembly[(gt_record.name, gt_record.seq_p5)][1].append(stacks_record)
-                record.found = True
+                stacks_record.found = True
 
     for _, record in sketched_stacks_data:
         if record.found is False:
             print("Not found:", record.seq)
-    print(assembly)
-    input("waiting for you")
+    # print(assembly)
+    # input("waiting for you")
     return assembly
 
 
@@ -272,6 +272,13 @@ def get_argparser():
     parser = argparse.ArgumentParser()
     # input
     parser.add_argument(
+        "-r", "--read-length",
+        help="Total simulated read length of one mate. ",
+        required=True,
+        type=int,
+        dest="read_length",
+        )
+    parser.add_argument(
         "-s", "--stacks-snps-file",
         help="Path to a stacks snps vcf file",
         dest="stacks_haplo",
@@ -286,6 +293,12 @@ def get_argparser():
         help="Path the a YAML gt file",
         default="RAGEdataset_ATCACG_gt.yaml",
         dest="yaml",
+        )
+    parser.add_argument(
+        "-j", "--join-seq",
+        help="Sequence used to join p5 and p7 read in merge mode.",
+        default="",
+        dest="join_seq",
         )
     # input
     parser.add_argument(
