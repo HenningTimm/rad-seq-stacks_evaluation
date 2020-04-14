@@ -1,0 +1,10 @@
+cores_per_subworkflow: 3
+
+plotting_thresholds:
+  - 50
+  - 100
+  - 1000
+
+workflows:
+  - "no_dedup"
+  - "with_dedup"

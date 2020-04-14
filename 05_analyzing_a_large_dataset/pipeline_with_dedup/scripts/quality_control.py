@@ -63,7 +63,6 @@ def validate_extraction():
         less than 50% -> Error
         less than 80% -> Warning
       - No file should be empty
-      - TODO (see below)
     """
     print("Evaluating the extraction of individuals through process_radtags.")
 
@@ -109,9 +108,6 @@ def validate_extraction():
                 all_good = False
     if all_good:
         print("  All good")
-
-    # TODO should read lengths in p5 reads be different after this?
-    # TODO are barcodes trimmed out?
 
 def main():
     # validate_trimmed_spacer()
