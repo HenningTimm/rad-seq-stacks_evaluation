@@ -1,4 +1,7 @@
 rad-seq-stacks_no_dedup/*
 rad-seq-stacks_with_dedup/*
 testdata/*
+validation/*
+results/*
+scripts/__pycache__
 04_*.pdf
