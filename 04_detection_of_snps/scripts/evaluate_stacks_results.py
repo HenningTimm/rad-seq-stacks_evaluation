@@ -1,5 +1,6 @@
-# -*- coding: utf-8 -*-
-"""Evaluate a stack mapping versus a simulated rage dataset.
+"""Evaluate a Stacks mapping versus a simulated ddRAGE dataset.
+
+Identify loci between both data sets using Bottom-k sketching, then perform an alignment.
 """
 import argparse
 
@@ -34,34 +35,25 @@ def find_matching_loci(gt_data, stacks_data, similarity, verbose=True):
     """
     # sketching parameters
     k = 7
-    s = 50
+    s = 30
     sketch = partial(sk.bottom_sketch, k=k, s=s)
 
     # initialize assembly
     assembly = {
         (gt_record.name, gt_record.seq_p5):
         (gt_record, []) for gt_record in gt_data}
-    # print("Sketching stacks data")
     # pre-sketch the data to avoid quadratic (re-) sketching
     sketched_stacks_data = [(sketch(stacks_record.seq.decode()), stacks_record)
                             for stacks_record in stacks_data]
-    
-    # print(assembly)
-    # input("waiting for you")
-    # for s, record in sketched_stacks_data:
-    #     print(record, s)
 
-    # print("Searching")
     for index, (gt_record) in enumerate(gt_data):
         # print user output
         if verbose and index % 100 == 0:
             print(index, file=sys.stderr)
-        # print(joined_gt_seq)
         sketch_gt = sketch(gt_record.seq_p5)
 
         # compare all stacks locus sketches against the active RAGE loc. sketch
         # Append the loci of all similar sequences to the assembly list.
-
         for sketch_stacks, stacks_record in sketched_stacks_data:
             if sk.compare_sketches(sketch_gt, sketch_stacks, s) > similarity:
                 assembly[(gt_record.name, gt_record.seq_p5)][1].append(stacks_record)
@@ -70,8 +62,6 @@ def find_matching_loci(gt_data, stacks_data, similarity, verbose=True):
     for _, record in sketched_stacks_data:
         if record.found is False:
             print("Not found:", record.seq)
-    # print(assembly)
-    # input("waiting for you")
     return assembly
 
 
@@ -103,13 +93,6 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
                 "stacks_loci": []
             }
 
-            # if len(stacks_loci) > 1:
-            #     # This means that more than one stacks locus associated
-            #     # with the active ground truth locus
-            #     print("HIT")
-            #     print(gt_seq)
-            #     print(stacks_loci)
-
             successfully_detected, successfully_aligned = False, False
             undetected, no_mutations = False, False
 
@@ -134,11 +117,11 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
                 # these are either unique or good enough
                 aln = all_alns[0]
 
-                if aln[2] >= 80:
+                if aln[2] >= 50:
                     successfully_aligned = True
                     stacks_locus_info["SNPs"] = [
                         {
-                            # TODO: this is not 100% accurate. The precise
+                            # NOTE: this is not 100% accurate. The precise
                             # position can variate with different spacer length
                             # etc. This is a conservative estimate.
                             "orientation": "p7" if entry.pos > 98 else "p5",
@@ -160,12 +143,6 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
                         #       RAGE simulated as root as main allele
                         #         -> consider x>y == y>x)
                         #
-                        # WARNING how to manage split up loci?
-                        # consider: stacks split up a heterozygous locus
-                        # to two loci. How do we count that? Two misses?
-                        # Check if the union of all variants covers the
-                        # set of simulated variants?
-                        #
                         # TODO: Evaluate if the right allele frequencies were
                         #       detected by stacks
                     elif gt_locus.mutations:
@@ -174,13 +151,12 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
                         no_mutations = True
 
                 else:
-                    print(f"MISMATCH with {stacks_locus.data[0].chrom}")
+                    print(f"MISMATCH with {stacks_locus}")
                     print(format_alignment(*aln))
                 outdata["Loci"][gt_name]["stacks_loci"].append(
                     stacks_locus_info)
 
             if not stacks_loci:
-                # print("No matching stack locus found", file=outfile)
                 outdata["Loci"][gt_name]["stacks_loci"] = "No matches found"
                 nr_undiscovered_gt_loci += 1
 
@@ -263,9 +239,6 @@ def main(args):
     print("\n\nLocus Analysis:\n", file=sys.stderr)
     evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args)
 
-    # print("\n\nSNPs Analysis:\n", file=sys.stderr)
-    # evaluate_snps(assembly, gt_data, stacks_data, args)
-
 
 def get_argparser():
     """Manage user parameters"""
@@ -273,7 +246,7 @@ def get_argparser():
     # input
     parser.add_argument(
         "-r", "--read-length",
-        help="Total simulated read length of one mate. ",
+        help="Total simulated read length of one mate.",
         required=True,
         type=int,
         dest="read_length",

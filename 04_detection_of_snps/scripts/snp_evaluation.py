@@ -1,14 +1,18 @@
+"""Plot SNP statistics.
+"""
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import re
 
 
-def get_data():
-    # This data has been manually extracted from the logs of an
-    # analysis run on compute (large)
+def parse_input_into_df():
+    """
+    """
     data = pd.DataFrame(
-        columns=["Parameters", "Deduplication", "False Positive SNPs", "False Negative SNPs", "True Positive SNPs", "Total SNPs", "Split Loci", "Missed Loci"],
+        columns=["Parameters", "Deduplication", "False Positive SNPs",
+                 "False Negative SNPs", "True Positive SNPs", "Total SNPs",
+                 "Split Loci", "Missed Loci"],
         )
     
     with open(snakemake.input.stats_file, "r") as results:
@@ -17,8 +21,8 @@ def get_data():
             if not chunk:
                 continue
             dedup, n, M, m = re.search("Analyzed validation\/(with|no)_dedup\/n=(\d+)\.M=(\d+)\.m=(\d+).", chunk).groups()
-            
 
+            # parse chunk into data frame entries
             data_point = pd.DataFrame(
                 {
                     "Parameters": f"n={n} M={M} m={m}",
@@ -30,6 +34,7 @@ def get_data():
                     "Split Loci": int(re.search("Split loci: +(\d+)", chunk).groups()[0]),
                     "Missed Loci": int(re.search("Missed loci: +(\d+)", chunk).groups()[0]),
                 },
+                # assert that runs with dedup occur after ones without
                 index=[(1000 if dedup == "with" else 0) + int(n)]
             )
             data = data.append(data_point)
@@ -40,7 +45,7 @@ def get_data():
     return data
 
 def plot_snp_evaluation(out_path="snp_evaluation.pdf"):
-    df = get_data()
+    df = parse_input_into_df()
 
     sns.set_style("whitegrid")
     sns.set_context("paper", font_scale=1.6)
@@ -98,7 +103,6 @@ def plot_snp_evaluation(out_path="snp_evaluation.pdf"):
     plt.tight_layout()
     plt.savefig(snakemake.output.split_loci, dpi=300)
     plt.clf()
-
 
 
 if __name__ == "__main__":

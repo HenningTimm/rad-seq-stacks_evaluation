@@ -1,3 +1,5 @@
+"""Parse ddRAGE ground truth files and Stacks VCF files.
+"""
 import sys
 import dinopy as dp
 import pysam
@@ -38,7 +40,6 @@ def normalize_mutation(mut, offset):
             return ("Skip", (orientation, snp_pos, (base_from, base_to)))
         else:
             orientation = "p5"
-        # return ("SNP", (orientation, snp_pos, (base_from, base_to)))
         ## the +6 is only valid for this simulated dataset
         return ("SNP", (orientation, snp_pos + 6, (base_from, base_to)))
     else:
@@ -124,15 +125,11 @@ def parse_rage_gt_file(args):
             else:
                 dropout.append(True)
 
-        ## BUG
-        ## this is no longer accurate with the changes made to
-        ## normalize mutation.
-        ## This overreports the number of mutations in the p5 reads,
-        ## since p7 snps are reported as the mutation type 'skip'
-        ## in p5 mode stacks has no chance to detect them
         if any((mut_type == "SNP" for mut_type, _ in mutations)):
             nr_loci_with_snps += 1
             nr_loci_with_muts += 1
+        elif all((mut_type == "Skip" for mut_type, _ in mutations)):
+            ...
         elif mutations:
             nr_loci_with_muts += 1  # locus with indels only
 
@@ -183,7 +180,7 @@ def get_stacks_data(args):
             seq = list(indexed_far[chromosome])[0].sequence
             record = VCFRecord(chromosome, seq, [variant_record], False)
             last_locus = variant_record.chrom
-    print("LOC SEQS", loc_seqs)
+    # print("LOC SEQS", loc_seqs)
             
     # write the last record
     if chromosome is not None:
@@ -202,5 +199,5 @@ def get_stacks_data(args):
         # variants detected by stacks.
         if chromosome not in loc_seqs:
             loc_seqs[chromosome] = VCFRecord(chromosome, seq, [], False)
-    print("LOC SEQS 2", loc_seqs)
+    # print("LOC SEQS 2", loc_seqs)
     return list(loc_seqs.values())

@@ -6,14 +6,18 @@ import yaml
 import copy
 import sys
 
+
 def snp_to_text(snp):
+    """Convert SNP objects into strings."""
     return f"{snp['orientation']}@{snp['pos']}:{snp['ref']}>{snp['alt']}"
 
 def snps_to_set(snps):
+    """Generate a set of strings from a list of SNP objects."""
     return set([snp_to_text(snp) for snp in snps])
 
 
 def offset_snp(snp, offset, invert=False):
+    """Translate SNP positions by a given ofsset."""
     orientation, tail = snp.split("@")
     pos, base_change = tail.split(":")
     base_from, base_to = base_change.split(">")
@@ -27,6 +31,9 @@ def offset_snp(snp, offset, invert=False):
 
 
 def evaluate_file(path, stats_file):
+    """Evaluate if simulated SNPs were detected by Stacks,
+    and if Stacks introduced 'new' SNPs that were not simulated.
+    """
     nr_of_misidentified_snps = 0
     nr_of_missed_snps = 0
     nr_of_correct_snps = 0

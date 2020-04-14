@@ -1,4 +1,7 @@
-"""
+"""Compare number and coverage of loci for different Stacks parameter sets.
+
+Generate a violin plot of locus coverages and a point plot of locus number per individual.
+Both plots compare runs with and without deduplication.
 """
 import os
 
@@ -9,34 +12,11 @@ import seaborn as sns
 import pandas as pd
 import yaml
 from collections import Counter
-# def tuftefy(ax):
-#     """Remove spines and tick position markers to reduce ink."""
-#     ax.spines["top"].set_visible(False)
-#     ax.spines["right"].set_visible(False)
-#     ax.spines["left"].set_visible(False)
-#     ax.spines["bottom"].set_visible(True)
-#     ax.spines["bottom"].set_color('grey')
-#     ax.grid(color="w", alpha=0.7)
-#     ax.get_yaxis().grid(True)
-#     ax.get_xaxis().grid(False)
 
-
-# def dat_file_to_array(dat_file, threshold):
-#     """Read dat files into a list. Split off everything over
-#     threshold into a separate list.
-#     """
-#     data = []
-#     outliers = []
-#     for line in dat_file:
-#         count = int(line.strip())
-#         if count <= threshold:
-#             data.append(int(count))
-#         else:
-#             outliers.append(int(count))
-#     return data, outliers
 
 def get_simulated_counts():
-    # gt_df = pd.DataFrame(columns=["name", "simulated_loci"])
+    """Read in number of simulated loci from ddRAGE ground truth file.
+    """
     locus_counts = Counter()
     with open(snakemake.input.gt, "r") as gt:
         try:
@@ -50,7 +30,8 @@ def get_simulated_counts():
                 locus_counts[individual] += 1
     return locus_counts
 
-def compare_parameters():
+
+def compare_pipeline_results():
     """Distribution of one or more
     """
     # thin lines
@@ -94,11 +75,6 @@ def compare_parameters():
         figsize=(4*scale, 8*scale)
     )
 
-
-    # NOTE: Also get total number of simulated loci
-    # sim_counts = get_simulated_counts()
-    # print(sim_counts)
-    # sns.scatterplot(x="params", y="nr_loci", hue="name", style="dedup", data=df_counts)
     sns.catplot(
         "dedup", col="params", y="nr_loci", hue="name", data=df_counts,
         kind="point", col_wrap=3
@@ -106,6 +82,4 @@ def compare_parameters():
     plt.savefig(snakemake.output.scatter_path, format="pdf", dpi=300)
 
 
-
-
-compare_parameters()
+compare_pipeline_results()
