@@ -5,10 +5,17 @@ import sys
 
 configfile: "config.yaml"
 
-
-individuals = pd.read_csv("individuals.tsv", sep="\t", dtype=str).set_index("id", drop=False)
-individuals["hash"] = np.arange(len(individuals)) # individuals.id.str.encode("utf-8").apply(zlib.crc32)
-units = pd.read_csv("units.tsv", sep="\t", dtype=str).set_index("id", drop=False)
+individuals = pd.read_csv(
+    "individuals.tsv",
+    sep="\t",
+    dtype=str,
+).set_index("id", drop=False)
+individuals["hash"] = np.arange(len(individuals))
+units = pd.read_csv(
+    "units.tsv",
+    sep="\t",
+    dtype=str,
+).set_index("id", drop=False)
 
 kraken_db = config["params"]["kraken"].get("db")
 kraken_targets = []
@@ -45,7 +52,8 @@ def pop_suffixes():
     if suffixes:
         return suffixes
     else:
-        print(f"No valid output files specified for populations.", file=sys.stderr)
+        print(f"No valid output files specified for populations.",
+              file=sys.stderr)
         sys.exit(1)
 
 
@@ -55,19 +63,18 @@ rule all:
                p=config["params"]["stacks"],
                e=pop_suffixes(),
         ),
-        # expand("plots/{parameter_set}/{individual}_per_ind.pdf",
-        #        parameter_set=parameter_sets,
-        #        individual=set(individuals["id"]),
-        # ),                     
-        # expand("plots/distribution_comparison/{individual}_stacks_size_distribution.pdf",
-        #        individual=set(individuals["id"]),
-        # ),
-        # expand("plots/distribution_comparison/{individual}_stacks_counts.pdf",
-        #        individual=set(individuals["id"]),
-        # ),
+        expand("plots/{parameter_set}/{individual}_per_ind.pdf",
+               parameter_set=parameter_sets,
+               individual=set(individuals["id"]),
+        ),
+        expand("plots/distribution_comparison/{individual}_stacks_size_distribution.pdf",
+               individual=set(individuals["id"]),
+        ),
+        expand("plots/distribution_comparison/{individual}_stacks_counts.pdf",
+               individual=set(individuals["id"]),
+        ),
         "plots/distribution_comparison/stacks_counts.pdf",
         "plots/distribution_comparison/stacks_size_distribution.pdf",
-        # kraken_targets
 
 
 include: "rules/common.smk"

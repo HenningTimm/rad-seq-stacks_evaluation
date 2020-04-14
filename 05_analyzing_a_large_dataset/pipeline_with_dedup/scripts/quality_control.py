@@ -6,7 +6,6 @@ import random
 import re
 
 
-
 def validate_trimmed_spacer():
     """Validate output of trim spacers.
 
@@ -22,7 +21,7 @@ def validate_trimmed_spacer():
             random_read_start = (random.randint(0, 100000) * 4) + 2
             first_two = subprocess.Popen(('head', f'-n {random_read_start}'), stdin=whole_file.stdout, stdout=subprocess.PIPE)
             output = subprocess.check_output(('tail', '-n 1'), stdin=first_two.stdout)
-            print (f"  {f:<30} read in line {random_read_start:>10} length: {len(output):>4}: {output.strip().decode().replace('GGACGTAC', 'GGACG-TAC-', 1)}")
+            print(f"  {f:<30} read in line {random_read_start:>10} length: {len(output):>4}: {output.strip().decode().replace('GGACGTAC', 'GGACG-TAC-', 1)}")
 
 
 def validate_consensus_reads():
@@ -110,8 +109,8 @@ def validate_extraction():
         print("  All good")
 
 def main():
-    # validate_trimmed_spacer()
-    # validate_consensus_reads()
+    validate_trimmed_spacer()
+    validate_consensus_reads()
     validate_extraction()
 
 

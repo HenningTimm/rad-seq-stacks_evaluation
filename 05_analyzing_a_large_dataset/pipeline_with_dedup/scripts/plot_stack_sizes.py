@@ -90,7 +90,8 @@ def stack_size_distribution(data_file, output_path, threshold, ylim):
         }
     )
     # logarithmic violin plot as secondary view on the data
-    sns.violinplot(data=d, x="params", y="count", ax=ax_violin, inner="quartile", bw=0.2)
+    sns.violinplot(data=d, x="params", y="count", ax=ax_violin,
+                   inner="quartile", bw=0.2)
     ax_violin.set_yscale('log')
 
     # force upper y-axis limit to make plots comparable
@@ -162,7 +163,7 @@ def compare_parameters(data_files, violin_path, scatter_path, sizes_df_path, cou
             counts_df = locus_count_df
         else:
             counts_df = counts_df.append(locus_count_df, ignore_index=True)
-            
+
         all_params.append(params)
         cluster_counts.append(len(d) + len(o))
 
@@ -186,12 +187,9 @@ def compare_parameters(data_files, violin_path, scatter_path, sizes_df_path, cou
     fig, ax_violin = plt.subplots(
         figsize=(8*scale, 8*scale)
     )
-    # sns.scatterplot(x=all_params, y=cluster_counts)
     sns.scatterplot(x="params", y="nr_loci", hue="name", data=counts_df)
     plt.savefig(scatter_path, format="pdf", dpi=300)
 
-    
 
-    
 if __name__ == "__main__":
     cli()

@@ -8,13 +8,16 @@ rule shortest_read_per_sample:
     shell:
         "seqtk fqchk {input} | grep -oP 'min_len: \\K[0-9]+' > {output}"
 
+
 rule shortest_read:
     input:
-        expand("{{path}}/{individual}.{{orientation}}.len", individual=individuals.id)
+        expand("{{path}}/{individual}.{{orientation}}.len",
+               individual=individuals.id)
     output:
         "{path}/all.{orientation}.len"
     script:
         "../scripts/minimal_read_length.py"
+
 
 rule barcodes:
     output:
@@ -164,7 +167,6 @@ rule extract:
         "../envs/stacks.yaml"
     script:
         "../scripts/extract-individuals.py"
-
 
 
 def trim_input():

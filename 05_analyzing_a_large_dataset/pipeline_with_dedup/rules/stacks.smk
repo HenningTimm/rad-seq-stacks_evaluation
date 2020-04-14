@@ -29,6 +29,7 @@ rule ustacks:
 def fmt_ustacks_input(wildcards, input):
     return ["-s {}".format(f[:-len(".tags.tsv.gz")]) for f in input.ustacks]
 
+
 ustacks_individuals = expand(
     "ustacks/M={{max_individual_mm}}.m={{min_reads}}/{individual}.tags.tsv.gz",
     individual=individuals.id)
@@ -150,12 +151,6 @@ rule populations:
     output:
         expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/populations.{e}",
                e=pop_suffixes()),
-        # report(expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/populations.{type}.tsv", type=["sumstats_summary", "sumstats"]),
-        #        caption="../report/sumstats.rst",
-        #        category="Populations"),
-        # report(expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/populations.{type}.tsv", type=["haplotypes", "hapstats"]),
-        #        caption="../report/haplotypes.rst",
-        #        category="Populations"),
         expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/populations.{type}.tsv", type=["sumstats_summary", "sumstats"]),
         expand("calls/n={{max_locus_mm}}.M={{max_individual_mm}}.m={{min_reads}}/populations.{type}.tsv", type=["haplotypes", "hapstats"]),
     params:

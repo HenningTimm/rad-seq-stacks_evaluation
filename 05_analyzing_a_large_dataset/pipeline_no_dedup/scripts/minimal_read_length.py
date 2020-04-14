@@ -1,6 +1,3 @@
-"""
-"""
-
 lengths = []
 for len_file in snakemake.input:
     with open(len_file, 'r') as lf:

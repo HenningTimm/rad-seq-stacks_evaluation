@@ -6,7 +6,7 @@ import pandas as pd
 import yaml
 import numpy as np
 from networkx.drawing.nx_agraph import graphviz_layout, write_dot
-import math
+
 
 
 def load_classification_tree(f, min_percentage=0.0, node_fmt="{name} ({perc}%)"):
@@ -24,7 +24,6 @@ def load_classification_tree(f, min_percentage=0.0, node_fmt="{name} ({perc}%)")
     tree = "\n".join(fmt_node(row) for row in classification.itertuples() if row.percentage >= min_percentage)
     tree = yaml.load(tree, Loader=yaml.FullLoader)
 
-
     def traverse(subtree, G, parent=None):
         for node, children in subtree.items():
             name, perc, code = classification.loc[node, ["name", "percentage", "code"]].values
@@ -35,13 +34,10 @@ def load_classification_tree(f, min_percentage=0.0, node_fmt="{name} ({perc}%)")
             if children:
                 traverse(children, G, parent=node)
 
-
     G = nx.DiGraph()
     traverse(tree, G)
 
     return G
-
-
 
 
 class TreeCMap:

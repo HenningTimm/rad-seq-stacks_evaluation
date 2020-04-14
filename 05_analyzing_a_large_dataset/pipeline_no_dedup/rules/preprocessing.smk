@@ -8,13 +8,16 @@ rule shortest_read_per_sample:
     shell:
         "seqtk fqchk {input} | grep -oP 'min_len: \\K[0-9]+' > {output}"
 
+
 rule shortest_read:
     input:
-        expand("{{path}}/{individual}.{{orientation}}.len", individual=individuals.id)
+        expand("{{path}}/{individual}.{{orientation}}.len",
+               individual=individuals.id)
     output:
         "{path}/all.{orientation}.len"
     script:
         "../scripts/minimal_read_length.py"
+
 
 rule barcodes:
     output:
@@ -52,7 +55,7 @@ rule trim_p7_spacer:
 
 ################################################################################
 ################################################################################
-# WARNING this is hacked to skip this step for evaluation purposes
+# WARNING this rule is used to skip PCR deduplication for evaluation purposes
 ################################################################################
 ################################################################################
 rule fake_consensus_reads:
@@ -65,19 +68,11 @@ rule fake_consensus_reads:
     params:
         umi=config["umi"]
     conda:
-        # "../envs/consensus.yaml"
         "../envs/merge.yaml"
     log:
         "logs/consensus/{unit}.log"
     benchmark:
         "benchmarks/consensus/{unit}.txt"
-    # shell:
-    #     "TMPDIR=dedup "
-    #     "rbt call-consensus-reads -l {params.umi[len]} --umi-on-reverse "
-    #     "-d {params.umi[max_dist]} -D {params.umi[max_seq_dist]} "
-    #     "{input.fq1} {input.fq2} {output.fq1} {output.fq2} 2> {log}"
-    # shell:
-    #     "cp {input.fq1} {output.fq1} && cp {input.fq2} {output.fq2} "
     script:
         "../scripts/remove_UMI.py"
 
@@ -177,10 +172,9 @@ rule extract:
         "../scripts/extract-individuals.py"
 
 
-
 def trim_input():
     """Depending on the desired mode, this can either be p5 reads only,
-    p5 and p7 reads merged into one ('single end') read, or the p5 and p7 
+    p5 and p7 reads merged into one ('single end') read, or the p5 and p7
     files concatenated into one file.
     """
     mode = config["reads"]["mode"]

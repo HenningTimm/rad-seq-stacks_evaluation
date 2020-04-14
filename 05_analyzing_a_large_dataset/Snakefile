@@ -2,15 +2,13 @@ configfile: "config.yaml"
 
 rule all:
     input:
-        expand(
-            "05_pipeline_{workflow}/plots/distribution_comparison/stacks_counts.pdf",
-            workflow=config["workflows"],
-        ),
-        expand(
-            "05_pipeline_{workflow}/plots/distribution_comparison/stacks_size_distribution.pdf",
-            workflow=config["workflows"],
-        ),
         expand("05_compared_stack_sizes_threshold={t}.pdf",
+               t=config["plotting_thresholds"],
+        ),
+        expand("05_compared_stack_counts_threshold={t}.pdf",
+               t=config["plotting_thresholds"],
+        ),
+        expand("05_scatterplot_stack_counts_threshold={t}.pdf",
                t=config["plotting_thresholds"],
         ),
 
