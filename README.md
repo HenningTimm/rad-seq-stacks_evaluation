@@ -5,7 +5,7 @@ Collection of evaluation workflows for the [rad-seq-stacks](https://github.com/s
 ## Content
 This repository contains five evaluations.
 The first four use data simulated with our ddRADseq read simulator [ddRAGE](https://ddrage.readthedocs.io/en/latest/) and can be executed as is.
-For the fifth evaluation workflow we used an unbuplished in-house dataset.
+For the fifth evaluation workflow we used an unpublished in-house dataset.
 Hence, this workflow cannot be executed without access to the data set.
 Once the data is published, we will add the link.
 
