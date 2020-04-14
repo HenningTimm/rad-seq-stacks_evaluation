@@ -1,4 +1,5 @@
-"""Plot 
+"""Plot the distributions of locus sizes and locus numbers between
+different parameter sets.
 """
 import matplotlib as mpl
 mpl.use("agg")
