@@ -2,8 +2,11 @@ workflows:
   - "no_dedup"
   - "with_dedup"
 
+# processors used for each call of the rad-seq-stacks workflow
+# call the snakemake workflow with twice this amount
 cores_per_subworkflow: 3
 
+# locus coverage threshold for plots
 plotting_threshold: 100
 
 ddrage:
