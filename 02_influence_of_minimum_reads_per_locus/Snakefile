@@ -43,7 +43,7 @@ rule rage_dataset:
         "testdata/testdata_gt.yaml",
         "testdata/testdata_barcodes.txt",
     conda:
-        "rad-seq-stacks_with_dedup/envs/testdata.yaml"
+        "envs/testdata.yaml"
     params:
         loci=config["ddrage"]["loci"],
         individuals=config["ddrage"]["individuals"],
@@ -79,7 +79,7 @@ rule remove_annotation:
         gt1="testdata/testdata_1_annotation.txt",
         gt2="testdata/testdata_2_annotation.txt",
     conda:
-        "rad-seq-stacks_with_dedup/envs/testdata.yaml"
+        "envs/testdata.yaml"
     shell:
         "remove_annotation {input.fq1} {input.fq2}"
 
