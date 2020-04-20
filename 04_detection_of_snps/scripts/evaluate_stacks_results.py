@@ -138,13 +138,8 @@ def evaluate_assembly(assembly, gt_data, stacks_data, gt_stats, args):
                         # the correct mutation (e.g. SNP C>G at position 42 in
                         # the forward read) was detected.
                         #
-                        # TODO: Evaluate if right SNPs were found
-                        #       (mind that Stacks might not call the allele
-                        #       RAGE simulated as root as main allele
-                        #         -> consider x>y == y>x)
-                        #
-                        # TODO: Evaluate if the right allele frequencies were
-                        #       detected by stacks
+                        # More detailed evaluation is performed in the script:
+                        # scripts/parse_validation_file.py
                     elif gt_locus.mutations:
                         undetected = True
                     else:

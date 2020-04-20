@@ -1,11 +1,25 @@
 # rad-seq-stacks_evaluation
 Collection of evaluation workflows for the [rad-seq-stacks](https://github.com/snakemake-workflows/rad-seq-stacks) snakemake pipeline based on the [Stacks](http://catchenlab.life.illinois.edu/stacks/) software.
 
+## Requirements
+The pipelines require a snakemake version of 5.10.0 or above and an installation of the [conda](https://docs.conda.io/en/latest/miniconda.html) package manager to run.
+Lower versions result in a crash due to a `WorkflowError`.
+Assuming conda is already installed (for installation instructions please refer to the (mini)[conda](https://docs.conda.io/en/latest/miniconda.html) website), the required version of snakemake can be installed into a conda environment as follows:
+```bash
+$ conda create -n snakemake-env snakemake >=5.10.0 -c bioconda -c conda-forge
+```
+After installation, activate the environment using:
+```bash
+$ conda activate snakemake-env
+(snakemake-env)$ snakemake --version
+5.10.0
+```
+
 ## Usage
 Each folder contains a snakemake workflow that calls two instances of the rad-seq-stacks pipeline (each itself a snakemake workflow) on a simulated dataset.
 To perform an evaluation, navigate into the corresponding folder and call
 ```bash
-$ snakemake --use-conda --jobs 6
+(snakemake-env)$ snakemake --use-conda --jobs 6
 ```
 to run the pipeline.
 All subworkflows are restricted to 3 cores using a parameter in the `config.yaml` file in the respective folder.
