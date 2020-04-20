@@ -11,6 +11,7 @@ def snp_to_text(snp):
     """Convert SNP objects into strings."""
     return f"{snp['orientation']}@{snp['pos']}:{snp['ref']}>{snp['alt']}"
 
+
 def snps_to_set(snps):
     """Generate a set of strings from a list of SNP objects."""
     return set([snp_to_text(snp) for snp in snps])
@@ -26,7 +27,6 @@ def offset_snp(snp, offset, invert=False):
         tmp = base_from
         base_from = base_to
         base_to = tmp
-    
     return f"{orientation}@{pos}:{base_from}>{base_to}"
 
 
@@ -67,17 +67,17 @@ def evaluate_file(path, stats_file):
         # check again using simulated position +1 and remove
         # then simulated position +2 etc.
         # This should correctly identify problems through locus alignment
-        
+
         remaining_simulated_mutations = all_simulated_mutations - all_stacks_mutations
         remaining_stacks_mutations = all_stacks_mutations - (all_simulated_mutations & all_stacks_mutations)
-        
+
         corrected_remaining_simulated_mutations = copy.deepcopy(remaining_simulated_mutations)
         for sim_mut in remaining_simulated_mutations:
             offset_1 = offset_snp(sim_mut, 1)
             offset_2 = offset_snp(sim_mut, 2)
             offset_0_switched = offset_snp(sim_mut, 0, True)
             offset_1_switched = offset_snp(sim_mut, 1, True)
-            offset_2_switched = offset_snp(sim_mut, 2, True)            
+            offset_2_switched = offset_snp(sim_mut, 2, True)
             if offset_1 in remaining_stacks_mutations:
                 remaining_stacks_mutations.remove(offset_1)
                 corrected_remaining_simulated_mutations.remove(sim_mut)
@@ -98,13 +98,13 @@ def evaluate_file(path, stats_file):
         # relabel for easier use
         missed_snps = corrected_remaining_simulated_mutations
         bad_snps = remaining_stacks_mutations
-        
+
         if missed_snps:
             nr_of_missed_snps += len(missed_snps)
 
         if bad_snps:
             nr_of_misidentified_snps += len(bad_snps)
-            
+
         if not bad_snps and not missed_snps:
             nr_of_correct_snps += len(all_simulated_mutations)
         elif bad_snps:
@@ -115,8 +115,6 @@ def evaluate_file(path, stats_file):
             print("\n\n", file=sys.stderr)
         if all_simulated_mutations == all_stacks_mutations:
             correctly_classified += 1
-        print(f"All simulated mutations: {all_simulated_mutations} (len(all_simulated_mutations)) = {(len(all_simulated_mutations))}")
-    print(f"Total simulated mutations: {total_simulated_mutations} (len(total_simulated_mutations)) = {(len(total_simulated_mutations))}")
     output = [
         f"Analyzed {path}",
         f"Misidentified SNPs (FP):   {nr_of_misidentified_snps:>5}",
