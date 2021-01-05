@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4420213.svg)](https://doi.org/10.5281/zenodo.4420213)
+
 # rad-seq-stacks_evaluation
 Collection of evaluation workflows for the [rad-seq-stacks](https://github.com/snakemake-workflows/rad-seq-stacks) snakemake workflow based on the [Stacks](http://catchenlab.life.illinois.edu/stacks/) software. Notice that this evaluation was performed for my PhD thesis. For the most recent version of this analysis workflow, please refer to the [rad-seq-stacks workflow](https://github.com/snakemake-workflows/rad-seq-stacks) that is now part of the Snakemake Workflows project.
 
