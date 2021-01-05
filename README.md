@@ -1,6 +1,7 @@
 # rad-seq-stacks_evaluation
 Collection of evaluation workflows for the [rad-seq-stacks](https://github.com/snakemake-workflows/rad-seq-stacks) snakemake workflow based on the [Stacks](http://catchenlab.life.illinois.edu/stacks/) software. Notice that this evaluation was performed for my PhD thesis. For the most recent version of this analysis workflow, please refer to the [rad-seq-stacks workflow](https://github.com/snakemake-workflows/rad-seq-stacks) that is now part of the Snakemake Workflows project.
 
+
 ## Requirements
 The pipelines require a snakemake version of 5.10.0 or above and an installation of the [conda](https://docs.conda.io/en/latest/miniconda.html) package manager to run (we recommend using the miniconda Python 3.7 installer).
 Lower versions result in a crash due to a `WorkflowError`.
