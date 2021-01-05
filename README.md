@@ -1,5 +1,5 @@
 # rad-seq-stacks_evaluation
-Collection of evaluation workflows for the [rad-seq-stacks](https://github.com/snakemake-workflows/rad-seq-stacks) snakemake pipeline based on the [Stacks](http://catchenlab.life.illinois.edu/stacks/) software.
+Collection of evaluation workflows for the [rad-seq-stacks](https://github.com/snakemake-workflows/rad-seq-stacks) snakemake workflow based on the [Stacks](http://catchenlab.life.illinois.edu/stacks/) software. Notice that this evaluation was performed for my PhD thesis. For the most recent version of this analysis workflow, please refer to the [rad-seq-stacks workflow](https://github.com/snakemake-workflows/rad-seq-stacks) that is now part of the Snakemake Workflows project.
 
 ## Requirements
 The pipelines require a snakemake version of 5.10.0 or above and an installation of the [conda](https://docs.conda.io/en/latest/miniconda.html) package manager to run (we recommend using the miniconda Python 3.7 installer).
@@ -62,6 +62,7 @@ Simulates a high diversity dataset to analyze the impact of locus distance param
 Simulates a data set with an increased number of mutations (all SNPs) to analyze the performance of different parameter sets for SNP detection.
 
 ### 05_analyzing_a_large_dataset
-Analysis workflow for a dataset with 315 individuals of *Gammarus fossarum*.
-This dataset is not included, since it is not yet published.
-Once it is published, we will link to it here.
+Analysis workflow for a dataset with 315 individuals of *Gammarus fossarum* with a total size of 103GB of gzipped FASTQ reads.
+This dataset is not included, since it is not yet published by its owners.
+Once it is published, we will provide a link to it here.
+A list of individual names (id), barcoding information (p5 and p7 barcode), spacer lengths, and file names are contained in the respective [individuals.tsv](https://github.com/HenningTimm/rad-seq-stacks_evaluation/blob/master/05_analyzing_a_large_dataset/pipeline_with_dedup/individuals.tsv) and [units.tsv](https://github.com/HenningTimm/rad-seq-stacks_evaluation/blob/master/05_analyzing_a_large_dataset/pipeline_with_dedup/units.tsv) files. Used RADseq enzymes are documented in the [config.yaml](https://github.com/HenningTimm/rad-seq-stacks_evaluation/blob/master/05_analyzing_a_large_dataset/pipeline_with_dedup/config.yaml) file. The used DBR sequence is `NNNNNNMMGGACG`.
